@@ -1,4 +1,4 @@
 ansible-memcached
 =================
 
-Install two instances of Memcached with Ansible
+Install two instances of Memcached with Ansible.
