@@ -1,0 +1,15 @@
+---
+- name: "Groups hosts by OS Family"  
+  hosts: memcacheserv
+  tasks:
+     - group_by: key={{ ansible_os_family }}
+
+- name: "RedHat Hosts"
+  hosts: RedHat
+  roles:
+    - memcacheservred
+
+- name: "Debian Hosts"
+  hosts: Debian
+  roles:
+    - memcacheservdeb

@@ -1,0 +1,25 @@
+---
+
+- name: "Install Memcache Packages"
+  apt: pkg=memcached update_cache=yes
+
+- name: "Tell init files where to get Config"
+  shell: "cp /etc/memcached.conf /etc/memcached_sessions.conf && mv /etc/memcached.conf /etc/memcached_objects.conf"
+
+- name: "Setup Session Instance"
+  lineinfile: dest=/etc/memcached_sessions.conf regexp=^'\-m' line='-m 128'
+- lineinfile: dest=/etc/memcached_sessions.conf regexp=^'\-l' line='#-l 127.0.0.1'
+
+- name: "Setup Object Instance"
+  lineinfile: dest=/etc/memcached_objects.conf regexp=^'\-m' line='-m 1024'
+- lineinfile: dest=/etc/memcached_objects.conf regexp=^'\-l' line='#-l 127.0.0.1'
+- lineinfile: dest=/etc/memcached_objects.conf regexp=^'\-p' line='-p 11212'
+
+- name: "Add Firewall Rules"
+  shell: "ufw allow {{item}}"
+  with_items:
+   - 11211
+   - 11212
+
+- name: "Start and enable Service"
+  service: name=memcached state=started enabled=yes

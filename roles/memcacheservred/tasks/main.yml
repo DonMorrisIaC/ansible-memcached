@@ -1,0 +1,42 @@
+---
+- name: "Install Memcache Packages"
+  yum: name=memcached state=installed
+
+- name: "Stop Service and disable from startup"
+  service: name=memcached state=stopped enabled=no
+
+- name: "Copy init files for new instances"
+  shell: "cp /etc/init.d/memcached /etc/init.d/memcached-sessions && cp /etc/init.d/memcached /etc/init.d/memcached-objects"
+
+- name: "Tell init files where to get Config"
+  shell: "sed -i 's:/etc/sysconfig/memcached:/etc/sysconfig/memcached-sessions:g' /etc/init.d/memcached-sessions &&
+          sed -i 's:/etc/sysconfig/memcached:/etc/sysconfig/memcached-objects:g' /etc/init.d/memcached-objects"
+
+- name: "Copy Config files for new Instances"
+  shell: "cp /etc/sysconfig/memcached /etc/sysconfig/memcached-sessions && cp /etc/sysconfig/memcached /etc/sysconfig/memcached-objects"
+
+- name: "Setup Session Instance"
+  lineinfile: dest=/etc/sysconfig/memcached-sessions regexp=^MAXCONN= line=MAXCONN="4096"
+- lineinfile: dest=/etc/sysconfig/memcached-sessions regexp=^CACHESIZE= line=CACHESIZE="128"
+- lineinfile: dest=/etc/sysconfig/memcached-sessions line=PIDFILE=/var/run/memcached/memcached-sessions.pid
+- lineinfile: dest=/etc/sysconfig/memcached-sessions line=LOCKFILE=/var/lock/subsys/memcached-sessions
+
+- name: "Setup Object Instance"
+  lineinfile: dest=/etc/sysconfig/memcached-objects regexp=^PORT= line=PORT="11212"
+- lineinfile: dest=/etc/sysconfig/memcached-objects regexp=^MAXCONN= line=MAXCONN="4096"
+- lineinfile: dest=/etc/sysconfig/memcached-objects regexp=^CACHESIZE= line=CACHESIZE="1024"
+- lineinfile: dest=/etc/sysconfig/memcached-objects line=PIDFILE=/var/run/memcached/memcached-objects.pid
+- lineinfile: dest=/etc/sysconfig/memcached-objects line=LOCKFILE=/var/lock/subsys/memcached-objects
+
+- name: "Add Firewall Rules"
+  lineinfile: dest=/etc/sysconfig/iptables create=yes state=present insertafter="^:OUTPUT "
+              line="-A INPUT -m tcp -p tcp --dport {{item}} -j  ACCEPT"
+  with_items:
+   - 11211
+   - 11212
+  
+- name: "Start and enable Services, Restart Iptables"
+  service: name=memcached-sessions state=started enabled=yes
+- service: name=memcached-objects state=started enabled=yes
+- service: name=iptables state=restarted
+
